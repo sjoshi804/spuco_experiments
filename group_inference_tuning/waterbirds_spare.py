@@ -102,7 +102,7 @@ spare_infer = SpareInference(
     logits=predictions,
     class_labels=trainset.labels,
     device=device,
-    num_clusters=2,
+    max_clusters=10,
     high_sampling_power=args.high_sampling_power,
     verbose=True
 )
@@ -112,7 +112,7 @@ val_predictions = torch.nn.functional.softmax(get_model_outputs(model, valset, d
 val_spare_infer = SpareInference(
     logits=val_predictions,
     class_labels=valset.labels,
-    num_clusters=2,
+    max_clusters=10,
     device=device,
     high_sampling_power=args.high_sampling_power,
     verbose=True
