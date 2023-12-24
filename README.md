@@ -4,3 +4,8 @@
 - Robust training tuning
 - E2E tuning
 - ERM tuning
+
+Run guild queues for gpu affinitization
+```
+for i in {0...7}; do guild run queue -b --gpus="$i" -y; done
+```
