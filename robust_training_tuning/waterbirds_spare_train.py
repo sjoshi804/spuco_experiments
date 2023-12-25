@@ -11,7 +11,7 @@ import numpy as np
 
 from spuco.datasets import WILDSDatasetWrapper
 from spuco.evaluate import Evaluator, GradCamEvaluator
-from spuco.robust_train import GroupDRO
+from spuco.robust_train import SpareTrain
 from spuco.models import model_factory
 from spuco.utils import set_seed
 
@@ -79,10 +79,18 @@ testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="backgr
 # Load model
 model = model_factory("resnet50", trainset[0][0].shape, trainset.num_classes, pretrained=args.pretrained).to(device)
 
+# Sampling powers calculation
+sampling_powers = np.zeros(len(trainset))
+for key in trainset.group_partition.keys():
+    for i in trainset.group_partition[key]:
+        sampling_powers[i] = 1/len(trainset.group_partition[key])
+        
 # Initialize robust trainer
-robust_trainer = GroupDRO(
+robust_trainer = SpareTrain(
     model=model,
     num_epochs=args.num_epochs,
+    group_partition=trainset.group_partition,
+    sampling_powers=sampling_powers,
     trainset=trainset,
     batch_size=args.batch_size,
     optimizer=SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum),
@@ -95,11 +103,12 @@ for epoch in range(args.num_epochs):
     # Train
     robust_trainer.train_epoch(epoch)
     
-    #if (epoch + 1) % 10 != 0:
-    #    continue
+    if (epoch + 1) % 10 != 0:
+        continue
+    
     # Initialize results log
     results = pd.DataFrame(index=[0])
-    results["alg"] = "gb"
+    results["alg"] = "spare_train"
     results["timestamp"] = pd.Timestamp.now()
     args_dict = vars(args)
     for key in args_dict.keys():

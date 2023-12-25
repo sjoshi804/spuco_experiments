@@ -82,6 +82,7 @@ model = model_factory("resnet50", trainset[0][0].shape, trainset.num_classes, pr
 # Initialize robust trainer
 robust_trainer = GroupBalanceBatchERM(
     model=model,
+    group_partition=trainset.group_partition,
     num_epochs=args.num_epochs,
     trainset=trainset,
     batch_size=args.batch_size,
@@ -95,8 +96,9 @@ for epoch in range(args.num_epochs):
     # Train
     robust_trainer.train_epoch(epoch)
     
-    #if (epoch + 1) % 10 != 0:
-    #    continue
+    if (epoch + 1) % 10 != 0:
+        continue
+    
     # Initialize results log
     results = pd.DataFrame(index=[0])
     results["alg"] = "gb"
