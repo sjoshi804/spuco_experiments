@@ -29,7 +29,7 @@ parser.add_argument("--infer_num_epochs", type=int, default=1)
 parser.add_argument("--gpu", type=int, default=0)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--root_dir", type=str, default="/data")
-parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/group_inference_tuning/results.csv")
+parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/end2end_tuning/results.csv")
 
 parser.add_argument("--batch_size", type=int, default=128)
 parser.add_argument("--num_epochs", type=int, default=300)

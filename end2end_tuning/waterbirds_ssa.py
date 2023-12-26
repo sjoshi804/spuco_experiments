@@ -1,31 +1,23 @@
 import argparse
 import os
+import pickle 
 
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
 from torch.optim import SGD
 from wilds import get_dataset
-import pickle 
 
-from spuco.datasets import WILDSDatasetWrapper
-from spuco.evaluate import Evaluator, GroupEvaluator
-from spuco.group_inference import SpareInference
-from spuco.robust_train import SpareTrain
+from spuco.datasets import GroupLabeledDatasetWrapper, WILDSDatasetWrapper, SpuriousTargetDatasetWrapper
+from spuco.evaluate import Evaluator
+from spuco.group_inference import SSA
+from spuco.robust_train import GroupDRO
 from spuco.models import model_factory
-from spuco.utils import set_seed, Trainer
-from spuco.utils.misc import get_model_outputs
+from spuco.utils import Trainer, set_seed
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--only-inference", action="store_true")
 parser.add_argument("--val-size-pct", type=int, default=25)
 
-# Tuning
-parser.add_argument("--infer_lr", type=float, default=1e-3)
-parser.add_argument("--infer_weight_decay", type=float, default=1e-4)
-parser.add_argument("--infer_num_epochs", type=int, default=1)
-
-# Rest
 parser.add_argument("--gpu", type=int, default=0)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--root_dir", type=str, default="/data")
@@ -33,14 +25,16 @@ parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_exper
 
 parser.add_argument("--batch_size", type=int, default=128)
 parser.add_argument("--num_epochs", type=int, default=300)
-parser.add_argument("--lr", type=float, default=1e-4)
-parser.add_argument("--weight_decay", type=float, default=0.1)
+parser.add_argument("--lr", type=float, default=1e-5)
+parser.add_argument("--weight_decay", type=float, default=1.0)
 parser.add_argument("--momentum", type=float, default=0.9)
 parser.add_argument("--pretrained", action="store_true")
 
+parser.add_argument("--infer_lr", type=float, default=1e-5)
+parser.add_argument("--infer_weight_decay", type=float, default=1e-1)
 parser.add_argument("--infer_momentum", type=float, default=0.9)
-
-parser.add_argument("--high_sampling_power", type=int, default=2)
+parser.add_argument("--infer_num_iters", type=int, default=1000)
+parser.add_argument("--infer_val_frac", type=float, default=0.5)
 
 args = parser.parse_args()
 
@@ -49,14 +43,6 @@ set_seed(args.seed)
 
 # Load the full dataset, and download it if necessary
 dataset = get_dataset(dataset="waterbirds", download=True, root_dir=args.root_dir)
-
-train_transform = transforms.Compose([
-                transforms.Resize(256),
-                transforms.RandomCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            ])
 
 transform = transforms.Compose([
             transforms.Resize(256),
@@ -98,70 +84,23 @@ testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="backgr
 
 model = model_factory("resnet50", trainset[0][0].shape, trainset.num_classes, pretrained=args.pretrained).to(device)
 
-trainer = Trainer(
-    trainset=trainset,
+ssa = SSA(
+    spurious_unlabeled_dataset=trainset,
+    spurious_labeled_dataset=SpuriousTargetDatasetWrapper(valset, valset.spurious),
     model=model,
-    batch_size=args.batch_size,
-    optimizer=SGD(model.parameters(), lr=args.infer_lr, weight_decay=args.infer_weight_decay, momentum=args.infer_momentum),
+    labeled_valset_size=args.infer_val_frac,
+    lr=args.infer_lr,
+    weight_decay=args.infer_weight_decay,
+    num_iters=args.infer_num_iters,
+    tau_g_min=0.95,
     device=device,
     verbose=True
 )
 
-trainer.train(num_epochs=args.infer_num_epochs)
-
-logits = trainer.get_trainset_outputs()
-predictions = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy()
-spare_infer = SpareInference(
-    logits=predictions,
-    class_labels=trainset.labels,
-    device=device,
-    max_clusters=10,
-    high_sampling_power=args.high_sampling_power,
-    verbose=True
-)
-group_partition = spare_infer.infer_groups()
-
-val_predictions = torch.nn.functional.softmax(get_model_outputs(model, valset, device, verbose=True), dim=1).detach().cpu().numpy()
-val_spare_infer = SpareInference(
-    logits=val_predictions,
-    class_labels=valset.labels,
-    max_clusters=10,
-    device=device,
-    high_sampling_power=args.high_sampling_power,
-    verbose=True
-)
-group_evaluator = GroupEvaluator(
-    inferred_group_partition=val_spare_infer.infer_groups(),
-    true_group_partition=valset.group_partition,
-    num_classes=2,
-    verbose=True
-)
-
-sampling_powers = spare_infer.sampling_powers 
-
-print("Sampling powers: {}".format(sampling_powers))
+group_partition = ssa.infer_groups()
 for key in sorted(group_partition.keys()):
-    for true_key in sorted(trainset.group_partition.keys()):
-        print("Inferred group: {}, true group: {}, size: {}".format(key, true_key, len([x for x in trainset.group_partition[true_key] if x in group_partition[key]])))
-
-results = pd.DataFrame(index=[0])
-results["alg"] = "spare"
-results["timestamp"] = pd.Timestamp.now()
-args_dict = vars(args)
-for key in args_dict.keys():
-    results[key] = args_dict[key]
-results["group_accuracy"] = group_evaluator.evaluate_accuracy()
-precision = group_evaluator.evaluate_precision()
-recall = group_evaluator.evaluate_recall()
-results["group_avg_precision"] = precision[0]
-results["group_min_precision"] = precision[1]
-results["group_avg_recall"] = recall[0]
-results["group_min_recall"] = recall[1]
-
-if args.only_inference:
-    exit()
-    
-train_evaluator = Evaluator(
+    print(key, len(group_partition[key]))
+evaluator = Evaluator(
     testset=trainset,
     group_partition=group_partition,
     group_weights=trainset.group_weights,
@@ -170,17 +109,27 @@ train_evaluator = Evaluator(
     device=device,
     verbose=True
 )
-train_evaluator.evaluate()
+evaluator.evaluate()
 
-val_evaluator = Evaluator(
+robust_trainset = GroupLabeledDatasetWrapper(trainset, group_partition)
+
+valid_evaluator = Evaluator(
     testset=valset,
     group_partition=valset.group_partition,
-    group_weights=valset.group_weights,
-    batch_size=args.batch_size,
+    group_weights=trainset.group_weights,
+    batch_size=64,
     model=model,
     device=device,
     verbose=True
 )
+
+train_transform = transforms.Compose([
+                transforms.Resize(256),
+                transforms.RandomCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            ])
 
 # Get the training set
 train_data = dataset.get_subset(
@@ -189,19 +138,19 @@ train_data = dataset.get_subset(
 )
 trainset = WILDSDatasetWrapper(dataset=train_data, metadata_spurious_label="background", verbose=True)
 
-spare_train = SpareTrain(
+group_dro = GroupDRO(
     model=model,
+    val_evaluator=valid_evaluator,
     num_epochs=args.num_epochs,
-    trainset=trainset,
-    group_partition=group_partition,
-    sampling_powers=sampling_powers,
+    trainset=robust_trainset,
+    valset=valset,
     batch_size=args.batch_size,
     optimizer=SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum),
     device=device,
-    val_evaluator=val_evaluator,
     verbose=True
 )
-spare_train.train()
+group_dro.train()
+
 evaluator = Evaluator(
     testset=testset,
     group_partition=testset.group_partition,
@@ -212,12 +161,22 @@ evaluator = Evaluator(
     verbose=True
 )
 evaluator.evaluate()
+results = pd.DataFrame(index=[0])
+results["timestamp"] = pd.Timestamp.now()
+results["alg"] = "ssa"
+results["seed"] = args.seed
+results["pretrained"] = args.pretrained
+results["lr"] = args.lr
+results["weight_decay"] = args.weight_decay
+results["momentum"] = args.momentum
+results["num_epochs"] = args.num_epochs
+results["batch_size"] = args.batch_size
 
-# Log metrics
-results["train_worst_group_accuracy"] = train_evaluator.worst_group_accuracy[1]
-results["train_average_accuracy"] = train_evaluator.average_accuracy
+results["infer_lr"] = args.infer_lr
+results["infer_weight_decay"] = args.infer_weight_decay
+results["infer_num_iters"] = args.infer_num_iters
+results["infer_val_frac"] = args.infer_val_frac
 
-# Log results
 results["worst_group_accuracy"] = evaluator.worst_group_accuracy[1]
 results["average_accuracy"] = evaluator.average_accuracy
 
@@ -226,7 +185,7 @@ evaluator = Evaluator(
     group_partition=testset.group_partition,
     group_weights=trainset.group_weights,
     batch_size=args.batch_size,
-    model=spare_train.best_model,
+    model=group_dro.best_model,
     device=device,
     verbose=True
 )
@@ -245,3 +204,5 @@ results_df.to_csv(args.results_csv, index=False)
 
 print('Done!')
 print('Results saved to', args.results_csv)
+
+
