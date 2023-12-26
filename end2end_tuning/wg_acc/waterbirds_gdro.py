@@ -1,5 +1,6 @@
 import argparse
 import os
+import pickle 
 
 import pandas as pd
 import torch
@@ -17,6 +18,7 @@ from spuco.models import model_factory
 from spuco.utils import set_seed
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--val-size-pct", type=int, default=25)
 
 # Tuning
 parser.add_argument("--lr", type=float, default=1e-3)
@@ -73,8 +75,19 @@ test_data = dataset.get_subset(
     "test",
     transform=transform
 )
+
+subset_indices = None
+if args.val_size_pct == 5:
+    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
+        subset_indices = pickle.load(f)
+elif args.val_size_pct == 15:
+    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
+        subset_indices = pickle.load(f)
+else:
+    raise NotImplementedError(f"{args.val_size_pct} % val set size not supported")
+
 trainset = WILDSDatasetWrapper(dataset=train_data, metadata_spurious_label="background", verbose=True)
-valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True)
+valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True, subset_indices=subset_indices)
 testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="background", verbose=True)
 
 # Load model
