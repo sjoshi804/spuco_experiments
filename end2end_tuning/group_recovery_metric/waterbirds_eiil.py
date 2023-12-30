@@ -31,7 +31,7 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--root_dir", type=str, default="/data")
 parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/end2end_tuning/results.csv")
 
-parser.add_argument("--batch_size", type=int, default=128)
+parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--num_epochs", type=int, default=300)
 parser.add_argument("--lr", type=float, default=1e-5)
 parser.add_argument("--weight_decay", type=float, default=1.0)

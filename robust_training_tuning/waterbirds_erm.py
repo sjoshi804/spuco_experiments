@@ -27,7 +27,7 @@ parser.add_argument("--root_dir", type=str, default="/data")
 parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/robust_training_tuning/results.csv")
 
 parser.add_argument("--num_epochs", type=int, default=300)
-parser.add_argument("--batch_size", type=int, default=128)
+parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--momentum", type=float, default=0.9)
 parser.add_argument("--pretrained", action="store_true")
 
