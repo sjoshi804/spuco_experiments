@@ -7,5 +7,5 @@
 
 Run guild queues for gpu affinitization
 ```
-for i in {0..6}; do guild run queue -b --gpus="$i" -y; done
+for i in {0..3}; do guild run queue -b --gpus="$i" -y; done
 ```
