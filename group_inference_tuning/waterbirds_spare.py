@@ -26,7 +26,7 @@ parser.add_argument("--infer_num_epochs", type=int, default=1)
 parser.add_argument("--gpu", type=int, default=0)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--root_dir", type=str, default="/data")
-parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/group_inference_tuning/results.csv")
+parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/group_inference_tuning/result_spare.csv")
 
 parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--num_epochs", type=int, default=300)
@@ -102,7 +102,7 @@ spare_infer = SpareInference(
     logits=predictions,
     class_labels=trainset.labels,
     device=device,
-    max_clusters=10,
+    num_clusters=2,
     high_sampling_power=args.high_sampling_power,
     verbose=True
 )
@@ -112,11 +112,22 @@ val_predictions = torch.nn.functional.softmax(get_model_outputs(model, valset, d
 val_spare_infer = SpareInference(
     logits=val_predictions,
     class_labels=valset.labels,
-    max_clusters=10,
+    num_clusters=2,
     device=device,
     high_sampling_power=args.high_sampling_power,
     verbose=True
 )
+val_group_partition = val_spare_infer.infer_groups()
+# METRICS
+print("Creating compatible inferred group partition")    
+inferred_group_partition = {}
+if len(val_group_partition[(0,0)]) < len(val_group_partition[(0,1)]):
+    inferred_group_partition[(0,0)] = val_group_partition[(0,1)]
+    inferred_group_partition[(0,1)] = val_group_partition[(0,0)]
+if len(val_group_partition[(1,1)]) < len(val_group_partition[(1,0)]):
+    inferred_group_partition[(1,1)] = val_group_partition[(1,0)]
+    inferred_group_partition[(1,0)] = val_group_partition[(1,1)]
+    
 group_evaluator = GroupEvaluator(
     inferred_group_partition=val_spare_infer.infer_groups(),
     true_group_partition=valset.group_partition,
