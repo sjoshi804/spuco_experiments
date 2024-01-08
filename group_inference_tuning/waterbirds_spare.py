@@ -118,18 +118,25 @@ val_spare_infer = SpareInference(
     verbose=True
 )
 val_group_partition = val_spare_infer.infer_groups()
+
 # METRICS
 print("Creating compatible inferred group partition")    
 inferred_group_partition = {}
 if len(val_group_partition[(0,0)]) < len(val_group_partition[(0,1)]):
     inferred_group_partition[(0,0)] = val_group_partition[(0,1)]
     inferred_group_partition[(0,1)] = val_group_partition[(0,0)]
+else:
+    inferred_group_partition[(0,0)] = val_group_partition[(0,0)]
+    inferred_group_partition[(0,1)] = val_group_partition[(0,1)]
 if len(val_group_partition[(1,1)]) < len(val_group_partition[(1,0)]):
     inferred_group_partition[(1,1)] = val_group_partition[(1,0)]
     inferred_group_partition[(1,0)] = val_group_partition[(1,1)]
+else:
+    inferred_group_partition[(1,1)] = val_group_partition[(1,1)]
+    inferred_group_partition[(1,0)] = val_group_partition[(1,0)]
     
 group_evaluator = GroupEvaluator(
-    inferred_group_partition=val_spare_infer.infer_groups(),
+    inferred_group_partition=inferred_group_partition,
     true_group_partition=valset.group_partition,
     num_classes=2,
     verbose=True
