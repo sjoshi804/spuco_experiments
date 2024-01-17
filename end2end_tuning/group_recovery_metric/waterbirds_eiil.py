@@ -18,7 +18,7 @@ from spuco.utils.misc import get_model_outputs
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--only-inference", action="store_true")
-parser.add_argument("--val-size-pct", type=int, default=25)
+parser.add_argument("--val-size-pct", type=int, default=15)
 
 # Varying in these runs
 parser.add_argument("--infer_lr", type=float, default=1e-3)
@@ -29,7 +29,7 @@ parser.add_argument("--infer_num_epochs", type=int, default=1)
 parser.add_argument("--gpu", type=int, default=0)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--root_dir", type=str, default="/data")
-parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/end2end_tuning/results.csv")
+parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/end2end_tuning/group_recovery_metric/results.csv")
 
 parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--num_epochs", type=int, default=300)
@@ -80,7 +80,7 @@ if args.val_size_pct == 5:
     with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
         subset_indices = pickle.load(f)
 elif args.val_size_pct == 15:
-    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
+    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_15pct_val_set.pkl", "rb") as f:    
         subset_indices = pickle.load(f)
 else:
     raise NotImplementedError(f"{args.val_size_pct} % val set size not supported")
