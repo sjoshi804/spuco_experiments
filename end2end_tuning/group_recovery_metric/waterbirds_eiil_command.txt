@@ -1,0 +1,42 @@
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.01 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 7
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.01 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 7
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.01 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5 --gpu 6
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.01 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 6
+
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 7
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 7
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5 --gpu 6
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=0.1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 6
+
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 0
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 0
+
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5 --gpu 0
+python waterbirds_eiil.py --pretrained --infer_lr=0.001 --infer_weight_decay=1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 0
+
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.01 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 6
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.01 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 6
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.01 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5 --gpu 7
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.01 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 7
+
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 0
+
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 0
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5 --gpu 1
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=0.1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 0
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 1
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 4
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5 --gpu 2
+python waterbirds_eiil.py --pretrained --infer_lr=0.0001 --infer_weight_decay=1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 4
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.01 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 2
+dpython waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.01 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 5
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.01 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5 --gpu 3
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.01 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 5
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5 --gpu 3
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 6
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=0.1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 6
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=5
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=1 --infer_num_epochs=1 --batch_size=64 --val-size-pct=15 --gpu 7
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=5
+python waterbirds_eiil.py --pretrained --infer_lr=1e-05 --infer_weight_decay=1 --infer_num_epochs=2 --batch_size=64 --val-size-pct=15 --gpu 7

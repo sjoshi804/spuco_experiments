@@ -1,5 +1,6 @@
 import argparse
 import os
+import pickle
 
 import pandas as pd
 import torch
@@ -11,11 +12,12 @@ import numpy as np
 
 from spuco.datasets import WILDSDatasetWrapper
 from spuco.evaluate import Evaluator, GradCamEvaluator
-from spuco.robust_train import PDE
+from spuco.robust_train import SpareTrain
 from spuco.models import model_factory
 from spuco.utils import set_seed
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--val-size-pct", type=int, default=25)
 
 # Tuning
 parser.add_argument("--lr", type=float, default=1e-3)
@@ -72,8 +74,19 @@ test_data = dataset.get_subset(
     "test",
     transform=transform
 )
+
+subset_indices = None
+if args.val_size_pct == 5:
+    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
+        subset_indices = pickle.load(f)
+elif args.val_size_pct == 15:
+    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
+        subset_indices = pickle.load(f)
+else:
+    raise NotImplementedError(f"{args.val_size_pct} % val set size not supported")
+
 trainset = WILDSDatasetWrapper(dataset=train_data, metadata_spurious_label="background", verbose=True)
-valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True)
+valset = WILDSDatasetWrapper(dataset=val_data, metadata_spurious_label="background", verbose=True, subset_indices=subset_indices)
 testset = WILDSDatasetWrapper(dataset=test_data, metadata_spurious_label="background", verbose=True)
 
 # Load model
@@ -86,18 +99,16 @@ for key in trainset.group_partition.keys():
         sampling_powers[i] = 1/len(trainset.group_partition[key])
         
 # Initialize robust trainer
-robust_trainer = PDE(
+robust_trainer = SpareTrain(
     model=model,
-    group_partition=trainset.group_partition,
     num_epochs=args.num_epochs,
+    group_partition=trainset.group_partition,
+    sampling_powers=sampling_powers,
     trainset=trainset,
     batch_size=args.batch_size,
     optimizer=SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=args.momentum),
     device=device,
-    verbose=True,
-    warmup_epochs=140,
-    expansion_size=10,
-    expansion_interval=10
+    verbose=True
 )
 
 curr_results_df = pd.DataFrame()
@@ -110,7 +121,7 @@ for epoch in range(args.num_epochs):
     
     # Initialize results log
     results = pd.DataFrame(index=[0])
-    results["alg"] = "pde"
+    results["alg"] = "spare_train"
     results["timestamp"] = pd.Timestamp.now()
     args_dict = vars(args)
     for key in args_dict.keys():

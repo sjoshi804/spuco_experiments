@@ -122,6 +122,7 @@ spare_infer = SpareInference(
 group_partition = spare_infer.infer_groups()
 
 val_predictions = torch.nn.functional.softmax(get_model_outputs(model, valset, device, verbose=True), dim=1).detach().cpu().numpy()
+print(len(valset.labels))
 val_spare_infer = SpareInference(
     logits=val_predictions,
     class_labels=valset.labels,
