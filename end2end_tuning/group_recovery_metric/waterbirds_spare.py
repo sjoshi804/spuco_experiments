@@ -18,7 +18,7 @@ from spuco.utils.misc import get_model_outputs
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--only-inference", action="store_true")
-parser.add_argument("--val-size-pct", type=int, default=25)
+parser.add_argument("--val-size-pct", type=int, default=15)
 
 # Tuning
 parser.add_argument("--infer_lr", type=float, default=1e-3)
@@ -29,7 +29,7 @@ parser.add_argument("--infer_num_epochs", type=int, default=1)
 parser.add_argument("--gpu", type=int, default=0)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--root_dir", type=str, default="/data")
-parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/end2end_tuning/results.csv")
+parser.add_argument("--results_csv", type=str, default="/home/sjoshi/spuco_experiments/end2end_tuning/group_recovery_metric/results.csv")
 
 parser.add_argument("--batch_size", type=int, default=64)
 parser.add_argument("--num_epochs", type=int, default=300)
@@ -87,7 +87,7 @@ if args.val_size_pct == 5:
     with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
         subset_indices = pickle.load(f)
 elif args.val_size_pct == 15:
-    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_5pct_val_set.pkl", "rb") as f:    
+    with open("/home/sjoshi/spuco_experiments/end2end_tuning/wbirds_15pct_val_set.pkl", "rb") as f:    
         subset_indices = pickle.load(f)
 else:
     raise NotImplementedError(f"{args.val_size_pct} % val set size not supported")
@@ -115,7 +115,7 @@ spare_infer = SpareInference(
     logits=predictions,
     class_labels=trainset.labels,
     device=device,
-    max_clusters=10,
+    num_clusters=2,
     high_sampling_power=args.high_sampling_power,
     verbose=True
 )
@@ -125,13 +125,31 @@ val_predictions = torch.nn.functional.softmax(get_model_outputs(model, valset, d
 val_spare_infer = SpareInference(
     logits=val_predictions,
     class_labels=valset.labels,
-    max_clusters=10,
+    num_clusters=2,
     device=device,
     high_sampling_power=args.high_sampling_power,
     verbose=True
 )
+val_group_partition = val_spare_infer.infer_groups()
+
+# METRICS
+print("Creating compatible inferred group partition")    
+inferred_group_partition = {}
+if len(val_group_partition[(0,0)]) < len(val_group_partition[(0,1)]):
+    inferred_group_partition[(0,0)] = val_group_partition[(0,1)]
+    inferred_group_partition[(0,1)] = val_group_partition[(0,0)]
+else:
+    inferred_group_partition[(0,0)] = val_group_partition[(0,0)]
+    inferred_group_partition[(0,1)] = val_group_partition[(0,1)]
+if len(val_group_partition[(1,1)]) < len(val_group_partition[(1,0)]):
+    inferred_group_partition[(1,1)] = val_group_partition[(1,0)]
+    inferred_group_partition[(1,0)] = val_group_partition[(1,1)]
+else:
+    inferred_group_partition[(1,1)] = val_group_partition[(1,1)]
+    inferred_group_partition[(1,0)] = val_group_partition[(1,0)]
+    
 group_evaluator = GroupEvaluator(
-    inferred_group_partition=val_spare_infer.infer_groups(),
+    inferred_group_partition=inferred_group_partition,
     true_group_partition=valset.group_partition,
     num_classes=2,
     verbose=True
@@ -144,23 +162,6 @@ for key in sorted(group_partition.keys()):
     for true_key in sorted(trainset.group_partition.keys()):
         print("Inferred group: {}, true group: {}, size: {}".format(key, true_key, len([x for x in trainset.group_partition[true_key] if x in group_partition[key]])))
 
-results = pd.DataFrame(index=[0])
-results["alg"] = "spare"
-results["timestamp"] = pd.Timestamp.now()
-args_dict = vars(args)
-for key in args_dict.keys():
-    results[key] = args_dict[key]
-results["group_accuracy"] = group_evaluator.evaluate_accuracy()
-precision = group_evaluator.evaluate_precision()
-recall = group_evaluator.evaluate_recall()
-results["group_avg_precision"] = precision[0]
-results["group_min_precision"] = precision[1]
-results["group_avg_recall"] = recall[0]
-results["group_min_recall"] = recall[1]
-
-if args.only_inference:
-    exit()
-    
 train_evaluator = Evaluator(
     testset=trainset,
     group_partition=group_partition,
@@ -212,10 +213,23 @@ evaluator = Evaluator(
     verbose=True
 )
 evaluator.evaluate()
+results = pd.DataFrame(index=[0])
+results["alg"] = "spare"
+results["timestamp"] = pd.Timestamp.now()
+args_dict = vars(args)
+for key in args_dict.keys():
+    results[key] = args_dict[key]
 
 # Log metrics
 results["train_worst_group_accuracy"] = train_evaluator.worst_group_accuracy[1]
 results["train_average_accuracy"] = train_evaluator.average_accuracy
+precision = group_evaluator.evaluate_precision()
+recall = group_evaluator.evaluate_recall()
+results["group_accuracy"] = group_evaluator.evaluate_accuracy()
+results["group_avg_precision"] = precision[0]
+results["group_min_precision"] = precision[1]
+results["group_avg_recall"] = recall[0]
+results["group_min_recall"] = recall[1]
 
 # Log results
 results["worst_group_accuracy"] = evaluator.worst_group_accuracy[1]
